@@ -82,27 +82,41 @@ router.post('/', verifyToken, allowRoles('citizen'), async (req, res) => {
   }
 });
 
-// GET /api/sos — List active alerts (collector+ roles, filtered by district)
+// GET /api/sos — List active alerts (scoped by user district/state)
 router.get(
   '/',
   verifyToken,
-  allowRoles('collector', 'district_authority', 'state_authority', 'ndma'),
+  allowRoles('citizen', 'collector', 'district_authority', 'state_authority', 'ndma'),
   async (req, res) => {
     try {
       let query = { status: 'active' };
 
-      // Determine district filter
+      // Determine filters based on user role
       let districtFilter = null;
-      if (req.user.role === 'collector' || req.user.role === 'district_authority') {
+      let stateFilter = null;
+
+      if (req.user.role === 'citizen' || req.user.role === 'collector' || req.user.role === 'district_authority') {
         districtFilter = req.user.district;
-      } else if (req.query.district) {
-        districtFilter = req.query.district;
+      } else if (req.user.role === 'state_authority') {
+        stateFilter = req.user.state;
+      } else {
+        // NDMA can query any district or state
+        if (req.query.district) districtFilter = req.query.district;
+        if (req.query.state)    stateFilter = req.query.state;
       }
 
       if (districtFilter) {
         // Find regions in this district
         const regions = await Region.find({
           district: { $regex: new RegExp(districtFilter, 'i') },
+        }).select('_id');
+
+        const regionIds = regions.map((r) => r._id);
+        query.regionId = { $in: regionIds };
+      } else if (stateFilter) {
+        // Find regions in this state
+        const regions = await Region.find({
+          state: { $regex: new RegExp(stateFilter, 'i') },
         }).select('_id');
 
         const regionIds = regions.map((r) => r._id);

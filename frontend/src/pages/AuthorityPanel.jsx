@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ShieldAlert, Activity, Users, Send, FileText, Package, CloudRain, Flame, Zap, Navigation } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { useRegionStore, useEventStore } from '../store';
 import { regions as regionsApi, events as eventsApi } from '../services/api';
 import { DisasterMap } from '../components/Map';
@@ -18,12 +19,46 @@ const getEventIcon = (type) => {
 };
 
 const AuthorityPanel = () => {
+  const { user } = useAuth();
   const { regions, setRegions } = useRegionStore();
   const { events, setEvents } = useEventStore();
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedEvent, setExpandedEvent] = useState(null);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [broadcastData, setBroadcastData] = useState({ district: 'All Districts', message: '' });
+
+  // Get distinct districts from loaded regions
+  const uniqueDistricts = [...new Set(regions.map(r => r.district).filter(Boolean))];
+  const displayDistricts = uniqueDistricts.length > 0 ? uniqueDistricts : ['Bhopal', 'Indore'];
+
+  // Dynamic Map Centering and Zoom
+  const getMapSettings = () => {
+    if (!user) return { center: [20.5937, 78.9629], zoom: 5 };
+    
+    if (user.role === 'district_authority') {
+      const match = regions.find(r => r.district?.toLowerCase() === user.district?.toLowerCase() || r.name?.toLowerCase() === user.district?.toLowerCase());
+      if (match?.centroid?.coordinates) {
+        return { center: [match.centroid.coordinates[1], match.centroid.coordinates[0]], zoom: 10 };
+      }
+    }
+    
+    // State-level views
+    const stateName = user.state || '';
+    switch (stateName.toLowerCase()) {
+      case 'madhya pradesh':
+        return { center: [23.2599, 77.4126], zoom: 7 };
+      case 'maharashtra':
+        return { center: [19.0760, 72.8777], zoom: 7 };
+      case 'tamil nadu':
+        return { center: [10.7656, 79.8433], zoom: 7 };
+      case 'uttarakhand':
+        return { center: [30.2844, 78.9818], zoom: 7 };
+      default:
+        return { center: [20.5937, 78.9629], zoom: 5 }; // National (NDMA)
+    }
+  };
+
+  const { center: mapCenter, zoom: mapZoom } = getMapSettings();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,18 +68,18 @@ const AuthorityPanel = () => {
           eventsApi.getDisasterEvents()
         ]);
         
-        if (regRes.status === 'fulfilled' && regRes.value?.data) setRegions(regRes.value.data);
-        if (evRes.status === 'fulfilled' && evRes.value?.data) setEvents(evRes.value.data);
+        if (regRes.status === 'fulfilled' && regRes.value?.data?.data) setRegions(regRes.value.data.data);
+        if (evRes.status === 'fulfilled' && evRes.value?.data?.data) setEvents(evRes.value.data.data);
 
         // Dummy data fallback
-        if (regRes.status === 'rejected' || !regRes.value?.data?.length) {
+        if (regRes.status === 'rejected' || !regRes.value?.data?.data?.length) {
           setRegions([
             { id: '1', name: 'Mumbai Coast', district: 'Mumbai', riskLevel: 'red', riskScore: 92, lastUpdated: new Date().toISOString(), geojson: { type: "Feature", geometry: { type: "Polygon", coordinates: [[[72.8, 19.0], [73.5, 19.0], [73.5, 18.5], [72.8, 18.5], [72.8, 19.0]]] }} },
             { id: '2', name: 'Pune Central', district: 'Pune', riskLevel: 'yellow', riskScore: 45, lastUpdated: new Date().toISOString(), geojson: { type: "Feature", geometry: { type: "Polygon", coordinates: [[[73.5, 19.0], [74.2, 19.0], [74.2, 18.5], [73.5, 18.5], [73.5, 19.0]]] }} },
             { id: '3', name: 'Nashik Valley', district: 'Nashik', riskLevel: 'orange', riskScore: 78, lastUpdated: new Date().toISOString() }
           ]);
         }
-        if (evRes.status === 'rejected' || !evRes.value?.data?.length) {
+        if (evRes.status === 'rejected' || !evRes.value?.data?.data?.length) {
           setEvents([
             { id: 'e1', name: 'Cyclone Nisarga', type: 'Cyclone', location: 'Coastal Belt', severity: 5, affectedPopulation: 1500000, description: "Category 4 cyclone approaching the western coast. Evacuation protocol initiated in vulnerable areas." },
             { id: 'e2', name: 'Mithi River Overflow', type: 'Flood', location: 'Mumbai Suburbs', severity: 3, affectedPopulation: 250000, description: "Continuous rainfall causing river to breach danger mark. Low-lying areas on standby." }
@@ -167,7 +202,7 @@ const AuthorityPanel = () => {
       case 'resources':
         return (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {['Mumbai', 'Pune', 'Nashik'].map(dist => (
+            {displayDistricts.map(dist => (
               <div key={dist} className="bg-theme-card/30 border border-theme-border rounded-xl p-6 shadow-md hover:bg-theme-card/45 transition-colors">
                 <h3 className="text-xl font-bold text-theme-text mb-6 flex items-center gap-2 border-b border-theme-border pb-3">
                   <Navigation size={20} className="text-theme-success" /> {dist} HQ
@@ -218,7 +253,7 @@ const AuthorityPanel = () => {
 
       {/* Map Section (60vh) */}
       <div className="w-full h-[60vh] bg-theme-card rounded-3xl border border-theme-border shadow-2xl overflow-hidden relative">
-         <DisasterMap regions={regions} sosAlerts={[]} zoom={6} center={[19.5, 75.0]} />
+         <DisasterMap regions={regions} sosAlerts={[]} zoom={mapZoom} center={mapCenter} />
          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] bg-theme-bg/85 backdrop-blur-md px-6 py-2.5 rounded-full border border-theme-border shadow-lg pointer-events-none">
             <span className="text-sm font-bold text-theme-text tracking-widest uppercase flex items-center gap-3">
               <Activity size={18} className="text-theme-primary animate-pulse" /> Live Statewide Telemetry
@@ -270,10 +305,10 @@ const AuthorityPanel = () => {
                   onChange={(e) => setBroadcastData({...broadcastData, district: e.target.value})}
                   className="w-full bg-theme-bg border border-theme-border rounded-xl p-4 text-theme-text focus:outline-none focus:border-theme-primary font-medium cursor-pointer"
                 >
-                  <option>All Districts (Statewide)</option>
-                  <option>Mumbai</option>
-                  <option>Pune</option>
-                  <option>Nashik</option>
+                  <option value="All Districts">All Districts (Statewide)</option>
+                  {displayDistricts.map(dist => (
+                    <option key={dist} value={dist}>{dist}</option>
+                  ))}
                 </select>
               </div>
               

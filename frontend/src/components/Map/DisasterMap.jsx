@@ -98,21 +98,31 @@ const DisasterMap = ({ regions = [], sosAlerts = [], center = [20.5937, 78.9629]
           );
         })}
 
-        {showSOS && sosAlerts.map((alert, idx) => (
-          <Marker 
-            key={alert.id || idx}
-            position={[alert.lat, alert.lng]}
-            icon={createPulseIcon()}
-          >
-             <Popup>
-               <div className="p-1 min-w-[150px]">
-                 <h4 className="font-bold text-theme-danger mb-1">SOS Alert</h4>
-                 <p className="text-sm text-theme-text">{alert.message || 'Emergency assistance needed!'}</p>
-                 {alert.phone && <p className="text-xs text-theme-muted mt-1">{alert.phone}</p>}
-               </div>
-             </Popup>
-          </Marker>
-        ))}
+        {showSOS && sosAlerts.map((alert, idx) => {
+          let position = null;
+          if (alert.lat !== undefined && alert.lng !== undefined) {
+            position = [alert.lat, alert.lng];
+          } else if (alert.location?.coordinates) {
+            position = [alert.location.coordinates[1], alert.location.coordinates[0]];
+          }
+          if (!position || isNaN(position[0]) || isNaN(position[1])) return null;
+
+          return (
+            <Marker 
+              key={alert.id || alert._id || idx}
+              position={position}
+              icon={createPulseIcon()}
+            >
+               <Popup>
+                 <div className="p-1 min-w-[150px]">
+                   <h4 className="font-bold text-theme-danger mb-1">SOS Alert</h4>
+                   <p className="text-sm text-theme-text">{alert.message || 'Emergency assistance needed!'}</p>
+                   {alert.phone && <p className="text-xs text-theme-muted mt-1">{alert.phone}</p>}
+                 </div>
+               </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
 
       <MapControls 

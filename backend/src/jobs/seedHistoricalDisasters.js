@@ -59,6 +59,28 @@ const regionsData = [
     },
     centroid: { type: 'Point', coordinates: [80.27, 13.08] },
     population: 4500000,
+  },
+  {
+    name: 'Bhopal Metro',
+    district: 'Bhopal',
+    state: 'Madhya Pradesh',
+    boundary: {
+      type: 'Polygon',
+      coordinates: [[[77.3, 23.2], [77.5, 23.2], [77.5, 23.3], [77.3, 23.3], [77.3, 23.2]]]
+    },
+    centroid: { type: 'Point', coordinates: [77.4126, 23.2599] },
+    population: 2500000,
+  },
+  {
+    name: 'Indore Zone 1',
+    district: 'Indore',
+    state: 'Madhya Pradesh',
+    boundary: {
+      type: 'Polygon',
+      coordinates: [[[75.8, 22.7], [76.0, 22.7], [76.0, 22.8], [75.8, 22.8], [75.8, 22.7]]]
+    },
+    centroid: { type: 'Point', coordinates: [75.8577, 22.7196] },
+    population: 3200000,
   }
 ];
 

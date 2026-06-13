@@ -25,22 +25,40 @@ const LoginPage = () => {
     return <Navigate to="/" replace />;
   }
 
+  const [selectedDistrict, setSelectedDistrict] = useState('bhopal');
+
   const handleDemoFill = (role) => {
+    // Map selectedDistrict to stateShort
+    let stateShort = 'mp';
+    if (selectedDistrict === 'mumbaisuburban') stateShort = 'maharashtra';
+    else if (selectedDistrict === 'nagapattinam') stateShort = 'tamilnadu';
+    else if (selectedDistrict === 'rudraprayag') stateShort = 'uttarakhand';
+
     switch (role) {
       case 'citizen':
-        setEmail('citizen@crisora.ai');
+        setEmail(`citizen.${selectedDistrict}@crisora.ai`);
         setPassword('password123');
-        toast.success('Filled Citizen Demo Credentials');
+        toast.success(`Filled Citizen Demo (${selectedDistrict})`);
         break;
       case 'collector':
-        setEmail('collector@crisora.ai');
+        setEmail(`collector.${selectedDistrict}@crisora.ai`);
         setPassword('password123');
-        toast.success('Filled Collector Demo Credentials');
+        toast.success(`Filled Collector Demo (${selectedDistrict})`);
         break;
-      case 'authority':
-        setEmail('authority@crisora.ai');
+      case 'district':
+        setEmail(`authority.${selectedDistrict}@crisora.ai`);
         setPassword('password123');
-        toast.success('Filled Authority Demo Credentials');
+        toast.success(`Filled District Authority Demo (${selectedDistrict})`);
+        break;
+      case 'state':
+        setEmail(`state.${stateShort}@crisora.ai`);
+        setPassword('password123');
+        toast.success(`Filled State Authority Demo (${stateShort})`);
+        break;
+      case 'ndma':
+        setEmail('ndma@crisora.ai');
+        setPassword('password123');
+        toast.success('Filled NDMA Officer Demo');
         break;
       default:
         break;
@@ -102,9 +120,22 @@ const LoginPage = () => {
 
           {/* Demo Login Autofill Helpers */}
           <div className="mb-6 bg-theme-card/40 border border-theme-border/60 rounded-2xl p-4">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-theme-primary mb-2.5 uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Demo Quick Fill</span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-theme-primary uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Demo Quick Fill</span>
+              </div>
+              <select
+                value={selectedDistrict}
+                onChange={(e) => setSelectedDistrict(e.target.value)}
+                className="bg-theme-bg border border-theme-border rounded-lg text-[10px] font-bold text-theme-text px-2 py-1 focus:outline-none focus:border-theme-primary cursor-pointer"
+              >
+                <option value="bhopal">Bhopal (MP)</option>
+                <option value="indore">Indore (MP)</option>
+                <option value="mumbaisuburban">Mumbai Suburban (MH)</option>
+                <option value="nagapattinam">Nagapattinam (TN)</option>
+                <option value="rudraprayag">Rudraprayag (UK)</option>
+              </select>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <button 
@@ -123,15 +154,31 @@ const LoginPage = () => {
               </button>
               <button 
                 type="button"
-                onClick={() => handleDemoFill('authority')}
+                onClick={() => handleDemoFill('district')}
                 className="py-1.5 px-2 bg-theme-card hover:bg-theme-primary/10 border border-theme-border hover:border-theme-primary/30 text-[11px] font-semibold text-theme-text rounded-xl transition-all cursor-pointer hover:scale-[1.02] active:scale-95"
               >
-                Authority
+                District
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <button 
+                type="button"
+                onClick={() => handleDemoFill('state')}
+                className="py-1.5 px-2 bg-theme-card hover:bg-theme-primary/10 border border-theme-border hover:border-theme-primary/30 text-[11px] font-semibold text-theme-text rounded-xl transition-all cursor-pointer hover:scale-[1.02] active:scale-95"
+              >
+                State Auth
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleDemoFill('ndma')}
+                className="py-1.5 px-2 bg-theme-card hover:bg-theme-primary/10 border border-theme-border hover:border-theme-primary/30 text-[11px] font-semibold text-theme-text rounded-xl transition-all cursor-pointer hover:scale-[1.02] active:scale-95"
+              >
+                NDMA
               </button>
             </div>
             <p className="text-[10px] text-theme-muted mt-2 text-center flex items-center justify-center gap-1">
               <BadgeInfo className="w-3 h-3 text-theme-primary flex-shrink-0" />
-              <span>Autofills credentials. Register them first if not created.</span>
+              <span>Autofills credentials for selected district. Password: password123</span>
             </p>
           </div>
 

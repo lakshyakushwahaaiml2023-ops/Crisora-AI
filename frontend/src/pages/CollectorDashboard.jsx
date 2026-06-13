@@ -39,24 +39,24 @@ const CollectorDashboard = () => {
           eventsApi.getDisasterEvents()
         ]);
 
-        if (regRes.status === 'fulfilled' && regRes.value?.data) setRegions(regRes.value.data);
-        if (sosRes.status === 'fulfilled' && sosRes.value?.data) setAlerts(sosRes.value.data);
-        if (evRes.status === 'fulfilled' && evRes.value?.data) setEvents(evRes.value.data);
+        if (regRes.status === 'fulfilled' && regRes.value?.data?.data) setRegions(regRes.value.data.data);
+        if (sosRes.status === 'fulfilled' && sosRes.value?.data?.data) setAlerts(sosRes.value.data.data);
+        if (evRes.status === 'fulfilled' && evRes.value?.data?.data) setEvents(evRes.value.data.data);
         
         // Add dummy data locally for UI demonstration purposes if API returns 0 items
-        if (regRes.status === 'rejected' || !regRes.value?.data?.length) {
+        if (regRes.status === 'rejected' || !regRes.value?.data?.data?.length) {
           setRegions([
              { id: '1', name: 'North District', riskLevel: 'red', riskScore: 85, geojson: { type: "Feature", geometry: { type: "Polygon", coordinates: [[[72.8, 19.0], [73.5, 19.0], [73.5, 18.5], [72.8, 18.5], [72.8, 19.0]]] }} },
              { id: '2', name: 'South District', riskLevel: 'yellow', riskScore: 40, geojson: { type: "Feature", geometry: { type: "Polygon", coordinates: [[[73.5, 19.0], [74.2, 19.0], [74.2, 18.5], [73.5, 18.5], [73.5, 19.0]]] }} }
           ]);
         }
-        if (sosRes.status === 'rejected' || !sosRes.value?.data?.length) {
+        if (sosRes.status === 'rejected' || !sosRes.value?.data?.data?.length) {
           setAlerts([
             { id: '101', type: 'Medical Emergency', status: 'active', message: 'Heart attack suspected', location: 'Downtown Avenue', createdAt: new Date(Date.now() - 600000).toISOString(), lat: 18.7, lng: 73.1 },
             { id: '102', type: 'Fire', status: 'acknowledged', message: 'Building caught fire', location: 'Industrial Park', createdAt: new Date(Date.now() - 3600000).toISOString(), lat: 18.8, lng: 73.4 }
           ]);
         }
-        if (evRes.status === 'rejected' || !evRes.value?.data?.length) {
+        if (evRes.status === 'rejected' || !evRes.value?.data?.data?.length) {
           setEvents([
             { id: 'e1', name: 'Cyclone Warning', type: 'Weather', location: 'Coastal Belt', severity: 4 },
             { id: 'e2', name: 'River Overflow', type: 'Flood', location: 'East Valley', severity: 3 }
@@ -78,6 +78,10 @@ const CollectorDashboard = () => {
   const criticalAlertsCount = activeAlerts.filter(a => a.status === 'active' || !a.status).length;
   const highRiskRegionsCount = regions.filter(r => r.riskLevel === 'orange' || r.riskLevel === 'red').length;
   const activeEventsCount = events.length;
+
+  const collectorRegion = regions.find(r => r.district?.toLowerCase() === user?.district?.toLowerCase() || r.name?.toLowerCase() === user?.district?.toLowerCase());
+  const centerCoords = collectorRegion?.centroid?.coordinates ? [collectorRegion.centroid.coordinates[1], collectorRegion.centroid.coordinates[0]] : undefined;
+
 
   const handleAcknowledge = async (id) => {
     try {
@@ -164,7 +168,7 @@ const CollectorDashboard = () => {
             <MapIcon size={20} className="text-theme-primary" /> District Overview
           </h2>
           <div className="flex-1 w-full rounded-lg overflow-hidden border border-theme-border relative shadow-inner">
-            <DisasterMap regions={regions} sosAlerts={activeAlerts} zoom={8} center={[18.8, 73.5]} />
+            <DisasterMap regions={regions} sosAlerts={activeAlerts} zoom={collectorRegion ? 10 : 8} center={centerCoords} />
           </div>
         </div>
 
@@ -207,7 +211,10 @@ const CollectorDashboard = () => {
                         </span>
                       </div>
                       <p className="text-xs text-theme-muted mb-1 flex items-center gap-1.5">
-                        <Locate size={12} className="opacity-70" /> {alert.location || 'Location Unknown'}
+                        <Locate size={12} className="opacity-70" /> 
+                        {alert.location?.coordinates 
+                          ? `Coordinates: ${alert.location.coordinates[1].toFixed(4)}, ${alert.location.coordinates[0].toFixed(4)}`
+                          : (typeof alert.location === 'string' ? alert.location : 'Location Unknown')}
                       </p>
                       <p className="text-xs text-theme-muted mb-3 flex items-center gap-1.5">
                         <Clock size={12} className="opacity-70" /> {alert.createdAt ? formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true }) : 'Just now'}

@@ -4,7 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Bot, Bell, AlertTriangle, ShieldCheck, HeartHandshake } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRegionStore, useSOSStore } from '../store';
-import { regions as regionsApi } from '../services/api';
+import { regions as regionsApi, sos as sosApi } from '../services/api';
 import { RiskMeter } from '../components/RiskMeter';
 import { DisasterMap } from '../components/Map';
 import { SOSButton } from '../components/SOSButton';
@@ -22,12 +22,12 @@ const SkeletonCard = () => (
 const CitizenApp = () => {
   const { user } = useAuth();
   const { regions, setRegions } = useRegionStore();
-  const { alerts } = useSOSStore();
+  const { alerts, setAlerts } = useSOSStore();
   const [isLoading, setIsLoading] = useState(true);
 
   // Derive district metrics
   const districtName = user?.district || 'Unknown District';
-  const myRegion = regions.find(r => r.name?.toLowerCase() === districtName.toLowerCase());
+  const myRegion = regions.find(r => r.district?.toLowerCase() === districtName.toLowerCase() || r.name?.toLowerCase() === districtName.toLowerCase());
   
   // Filter active alerts for the district
   const districtAlerts = alerts.filter(a => a.status !== 'resolved');
@@ -37,18 +37,19 @@ const CitizenApp = () => {
     const fetchDistrictData = async () => {
       try {
         setIsLoading(true);
-        // Using stub data if API is not fully running, or fetch directly.
-        // Assuming your backend /api/regions returns { data: [...] }
-        const res = await regionsApi.getRegions().catch(() => ({ data: [] }));
+        const [regionsRes, sosRes] = await Promise.allSettled([
+          regionsApi.getRegions(),
+          sosApi.getSOSAlerts()
+        ]);
         
-        // Populate with real data or fallback gracefully so UI doesn't crash
-        if (res.data?.length > 0) {
-          setRegions(res.data);
+        if (regionsRes.status === 'fulfilled' && regionsRes.value?.data?.data) {
+          setRegions(regionsRes.value.data.data);
         } else {
           // Fallback dummy data specifically for demo if API is empty
           setRegions([{
             id: 'mock-1',
             name: districtName,
+            district: districtName,
             riskScore: 65,
             riskLevel: 'orange',
             population: 1500000,
@@ -58,6 +59,10 @@ const CitizenApp = () => {
             }
           }]);
         }
+
+        if (sosRes.status === 'fulfilled' && sosRes.value?.data?.data) {
+          setAlerts(sosRes.value.data.data);
+        }
       } catch (error) {
         console.error("Failed to fetch regions:", error);
       } finally {
@@ -66,7 +71,7 @@ const CitizenApp = () => {
     };
 
     fetchDistrictData();
-  }, [setRegions, districtName]);
+  }, [setRegions, setAlerts, districtName]);
 
   const handleHelpClick = (alertId) => {
     alert(`Thank you for volunteering! (Stub for alert ID: ${alertId})`);
@@ -127,7 +132,11 @@ const CitizenApp = () => {
                     <AlertTriangle className="text-theme-danger flex-shrink-0 mt-0.5" size={16} />
                     <div>
                       <p className="text-sm text-theme-text font-medium">{alert.type || alert.message || 'Emergency Request'}</p>
-                       <p className="text-xs text-theme-muted mt-1">{alert.location || 'Unknown Location'}</p>
+                       <p className="text-xs text-theme-muted mt-1">
+                         {alert.location?.coordinates 
+                           ? `Coordinates: ${alert.location.coordinates[1].toFixed(4)}, ${alert.location.coordinates[0].toFixed(4)}`
+                           : (typeof alert.location === 'string' ? alert.location : 'Unknown Location')}
+                       </p>
                        <p className="text-[10px] text-theme-muted mt-1 uppercase tracking-wider">
                         {alert.createdAt ? formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true }) : 'Just now'}
                       </p>
@@ -153,6 +162,7 @@ const CitizenApp = () => {
             regions={myRegion ? [myRegion] : []} 
             sosAlerts={districtAlerts} 
             zoom={myRegion ? 9 : 5}
+            center={myRegion?.centroid?.coordinates ? [myRegion.centroid.coordinates[1], myRegion.centroid.coordinates[0]] : undefined}
           />
         </div>
       </div>
@@ -165,13 +175,17 @@ const CitizenApp = () => {
         {districtAlerts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {districtAlerts.map(alert => (
-              <div key={alert.id} className="p-4 bg-theme-bg/85 rounded-lg border border-theme-border flex justify-between items-center">
+              <div key={alert.id || alert._id} className="p-4 bg-theme-bg/85 rounded-lg border border-theme-border flex justify-between items-center">
                 <div>
                   <h3 className="text-sm font-medium text-theme-text">{alert.message || 'Assistance required'}</h3>
-                  <p className="text-xs text-theme-muted mt-1">{alert.location || 'Location tracking active'}</p>
+                  <p className="text-xs text-theme-muted mt-1">
+                    {alert.location?.coordinates 
+                      ? `Coordinates: ${alert.location.coordinates[1].toFixed(4)}, ${alert.location.coordinates[0].toFixed(4)}`
+                      : (typeof alert.location === 'string' ? alert.location : 'Location tracking active')}
+                  </p>
                 </div>
                 <button 
-                  onClick={() => handleHelpClick(alert.id)}
+                  onClick={() => handleHelpClick(alert.id || alert._id)}
                   className="px-4 py-2 bg-theme-card hover:bg-theme-bg text-theme-primary text-sm font-medium rounded-lg transition-colors border border-theme-border cursor-pointer"
                 >
                   I can help

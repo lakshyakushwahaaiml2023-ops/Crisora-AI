@@ -144,15 +144,24 @@ function normalizeEvacuationRoutes(body) {
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 
-// GET /api/regions — List all regions, optional filter by district and/or state
-router.get('/', async (req, res) => {
+// GET /api/regions — List all regions, scoped by user district/state
+router.get('/', verifyToken, async (req, res) => {
   try {
-    const { district, state, riskLevel, page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 20, riskLevel } = req.query;
 
     const filter = {};
-    if (district) filter.district = { $regex: new RegExp(district, 'i') };
-    if (state)    filter.state    = { $regex: new RegExp(state, 'i') };
     if (riskLevel) filter.riskLevel = riskLevel;
+
+    // Scope filtering based on user role
+    if (req.user.role === 'citizen' || req.user.role === 'collector' || req.user.role === 'district_authority') {
+      filter.district = { $regex: new RegExp(req.user.district, 'i') };
+    } else if (req.user.role === 'state_authority') {
+      filter.state = { $regex: new RegExp(req.user.state, 'i') };
+    } else {
+      // NDMA can specify via query parameters
+      if (req.query.district) filter.district = { $regex: new RegExp(req.query.district, 'i') };
+      if (req.query.state)    filter.state    = { $regex: new RegExp(req.query.state, 'i') };
+    }
 
     const skip = (Number(page) - 1) * Number(limit);
 
