@@ -27,7 +27,8 @@ const CitizenApp = () => {
 
   // Derive district metrics
   const districtName = user?.district || 'Unknown District';
-  const myRegion = regions.find(r => r.district?.toLowerCase() === districtName.toLowerCase() || r.name?.toLowerCase() === districtName.toLowerCase());
+  const districtRegions = regions.filter(r => r.district?.toLowerCase() === districtName.toLowerCase() || r.name?.toLowerCase() === districtName.toLowerCase());
+  const myRegion = districtRegions[0];
   
   // Filter active alerts for the district
   const districtAlerts = alerts.filter(a => a.status !== 'resolved');
@@ -159,9 +160,9 @@ const CitizenApp = () => {
         <h2 className="text-lg font-semibold text-theme-text mb-4 px-2">Live District Map</h2>
         <div className="h-[350px] w-full rounded-lg overflow-hidden border border-theme-border">
           <DisasterMap 
-            regions={myRegion ? [myRegion] : []} 
+            regions={districtRegions} 
             sosAlerts={districtAlerts} 
-            zoom={myRegion ? 9 : 5}
+            zoom={myRegion ? 11 : 5}
             center={myRegion?.centroid?.coordinates ? [myRegion.centroid.coordinates[1], myRegion.centroid.coordinates[0]] : undefined}
           />
         </div>

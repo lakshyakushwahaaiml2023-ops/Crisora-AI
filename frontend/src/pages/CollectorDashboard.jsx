@@ -79,7 +79,8 @@ const CollectorDashboard = () => {
   const highRiskRegionsCount = regions.filter(r => r.riskLevel === 'orange' || r.riskLevel === 'red').length;
   const activeEventsCount = events.length;
 
-  const collectorRegion = regions.find(r => r.district?.toLowerCase() === user?.district?.toLowerCase() || r.name?.toLowerCase() === user?.district?.toLowerCase());
+  const collectorRegions = regions.filter(r => r.district?.toLowerCase() === user?.district?.toLowerCase() || r.name?.toLowerCase() === user?.district?.toLowerCase());
+  const collectorRegion = collectorRegions[0];
   const centerCoords = collectorRegion?.centroid?.coordinates ? [collectorRegion.centroid.coordinates[1], collectorRegion.centroid.coordinates[0]] : undefined;
 
 
@@ -168,7 +169,7 @@ const CollectorDashboard = () => {
             <MapIcon size={20} className="text-theme-primary" /> District Overview
           </h2>
           <div className="flex-1 w-full rounded-lg overflow-hidden border border-theme-border relative shadow-inner">
-            <DisasterMap regions={regions} sosAlerts={activeAlerts} zoom={collectorRegion ? 10 : 8} center={centerCoords} />
+            <DisasterMap regions={collectorRegions} sosAlerts={activeAlerts} zoom={collectorRegion ? 11 : 8} center={centerCoords} />
           </div>
         </div>
 

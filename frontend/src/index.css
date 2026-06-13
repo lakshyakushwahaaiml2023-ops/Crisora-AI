@@ -49,15 +49,15 @@
   --color-risk-red: #C62828;
 }
 
-/* Shared Light Citizen App Theme */
+/* Dark Authority Command Center Theme */
 .theme-authority {
-  --color-bg-dark: #F5F7FA;
-  --color-bg-card: #FFFFFF;
-  --color-border: #D8E0EA;
-  --color-text-main: #1E293B;
-  --color-text-muted: #64748B;
-  --color-primary: #1565C0;
-  --color-accent: #1565C0;
+  --color-bg-dark: #101820;
+  --color-bg-card: #182A3A;
+  --color-border: #23384D;
+  --color-text-main: #E2E8F0;
+  --color-text-muted: #94A3B8;
+  --color-primary: #42A5F5;
+  --color-accent: #42A5F5;
   --color-success: #2E7D32;
   --color-warning: #F9A825;
   --color-danger: #C62828;
@@ -72,5 +72,7 @@ body {
   color: var(--color-text-main);
   margin: 0;
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.42857;
   transition: background-color 0.3s ease, color 0.3s ease;
 }

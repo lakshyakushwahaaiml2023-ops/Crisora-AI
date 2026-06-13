@@ -27,8 +27,15 @@ const AuthorityPanel = () => {
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [broadcastData, setBroadcastData] = useState({ district: 'All Districts', message: '' });
 
-  // Get distinct districts from loaded regions
-  const uniqueDistricts = [...new Set(regions.map(r => r.district).filter(Boolean))];
+  // Filter regions to only current authority's scope
+  const authorityRegions = user?.role === 'district_authority' 
+    ? regions.filter(r => r.district?.toLowerCase() === user.district?.toLowerCase() || r.name?.toLowerCase() === user.district?.toLowerCase()) 
+    : (user?.role === 'state_authority' 
+      ? regions.filter(r => r.state?.toLowerCase() === user.state?.toLowerCase()) 
+      : regions);
+
+  // Get distinct districts from relevant regions
+  const uniqueDistricts = [...new Set(authorityRegions.map(r => r.district).filter(Boolean))];
   const displayDistricts = uniqueDistricts.length > 0 ? uniqueDistricts : ['Bhopal', 'Indore'];
 
   // Dynamic Map Centering and Zoom
@@ -36,9 +43,9 @@ const AuthorityPanel = () => {
     if (!user) return { center: [20.5937, 78.9629], zoom: 5 };
     
     if (user.role === 'district_authority') {
-      const match = regions.find(r => r.district?.toLowerCase() === user.district?.toLowerCase() || r.name?.toLowerCase() === user.district?.toLowerCase());
+      const match = authorityRegions[0];
       if (match?.centroid?.coordinates) {
-        return { center: [match.centroid.coordinates[1], match.centroid.coordinates[0]], zoom: 10 };
+        return { center: [match.centroid.coordinates[1], match.centroid.coordinates[0]], zoom: 11 };
       }
     }
     
@@ -122,7 +129,7 @@ const AuthorityPanel = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme-border/50 bg-theme-card">
-                {regions.map(region => (
+                {authorityRegions.map(region => (
                   <tr key={region.id} className="hover:bg-theme-bg/30 transition-colors">
                     <td className="px-6 py-4 font-medium text-theme-text">{region.name}</td>
                     <td className="px-6 py-4 text-theme-muted">{region.district || 'Unassigned'}</td>
@@ -253,7 +260,7 @@ const AuthorityPanel = () => {
 
       {/* Map Section (60vh) */}
       <div className="w-full h-[60vh] bg-theme-card rounded-3xl border border-theme-border shadow-2xl overflow-hidden relative">
-         <DisasterMap regions={regions} sosAlerts={[]} zoom={mapZoom} center={mapCenter} />
+         <DisasterMap regions={authorityRegions} sosAlerts={[]} zoom={mapZoom} center={mapCenter} />
          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] bg-theme-bg/85 backdrop-blur-md px-6 py-2.5 rounded-full border border-theme-border shadow-lg pointer-events-none">
             <span className="text-sm font-bold text-theme-text tracking-widest uppercase flex items-center gap-3">
               <Activity size={18} className="text-theme-primary animate-pulse" /> Live Statewide Telemetry
