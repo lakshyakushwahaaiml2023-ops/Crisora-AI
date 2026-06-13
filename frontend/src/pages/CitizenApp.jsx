@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { Bot, Bell, AlertTriangle, ShieldCheck, HeartHandshake } from 'lucide-react';
+import { Bot, Bell, AlertTriangle, ShieldCheck, HeartHandshake, LogOut, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRegionStore, useSOSStore } from '../store';
-import { regions as regionsApi, sos as sosApi } from '../services/api';
+import toast from 'react-hot-toast';
+import { auth as authApi, regions as regionsApi, sos as sosApi } from '../services/api';
 import { RiskMeter } from '../components/RiskMeter';
 import { DisasterMap } from '../components/Map';
 import { SOSButton } from '../components/SOSButton';
@@ -25,6 +26,8 @@ const CitizenApp = () => {
   const { regions, setRegions } = useRegionStore();
   const { alerts, setAlerts } = useSOSStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [isEvacuated, setIsEvacuated] = useState(user?.isEvacuated || false);
+  const [evacuationLoading, setEvacuationLoading] = useState(false);
 
   // Derive district metrics
   const districtName = user?.district || 'Unknown District';
@@ -79,10 +82,36 @@ const CitizenApp = () => {
     alert(`Thank you for volunteering! (Stub for alert ID: ${alertId})`);
   };
 
+  const handleEvacuationToggle = async () => {
+    try {
+      setEvacuationLoading(true);
+      const next = !isEvacuated;
+      const res = await authApi.toggleEvacuationStatus(next);
+      if (res.data?.success) {
+        setIsEvacuated(res.data.isEvacuated);
+        toast.success(res.data.isEvacuated ? '✅ Marked as Evacuated. Voice alerts will stop.' : '⚠️ Status set to Pending. You will receive voice alerts.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Could not update evacuation status.');
+    } finally {
+      setEvacuationLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-24 font-sans relative">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-theme-text">Citizen Dashboard</h1>
+        {/* Evacuation Status Badge */}
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold ${
+          isEvacuated 
+            ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' 
+            : 'bg-amber-500/10 border-amber-500/40 text-amber-400'
+        }`}>
+          <CheckCircle2 size={16} />
+          {isEvacuated ? 'Evacuated' : 'Pending Evacuation'}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -159,6 +188,38 @@ const CitizenApp = () => {
             )}
           </div>
         )}
+      </div>
+
+      {/* Evacuation Compliance Card */}
+      <div className={`rounded-xl border p-5 shadow-xl transition-all ${
+        isEvacuated 
+          ? 'bg-emerald-950/40 border-emerald-700/40' 
+          : 'bg-amber-950/40 border-amber-700/40'
+      }`}>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-bold text-theme-text flex items-center gap-2">
+              <CheckCircle2 size={18} className={isEvacuated ? 'text-emerald-400' : 'text-amber-400'} />
+              Evacuation Compliance
+            </h2>
+            <p className="text-xs text-theme-muted mt-1">
+              {isEvacuated 
+                ? 'You are marked as evacuated. Voice calls will not be dispatched to you.' 
+                : 'Officials may call you if evacuation is ordered in your area.'}
+            </p>
+          </div>
+          <button
+            onClick={handleEvacuationToggle}
+            disabled={evacuationLoading}
+            className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-bold uppercase tracking-wide transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
+              isEvacuated 
+                ? 'bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/40' 
+                : 'bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 border border-emerald-500/40'
+            }`}
+          >
+            {evacuationLoading ? 'Updating...' : (isEvacuated ? 'Mark as Pending' : '✅ I Have Evacuated')}
+          </button>
+        </div>
       </div>
 
       {/* Map Section */}

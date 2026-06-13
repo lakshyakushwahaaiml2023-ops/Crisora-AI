@@ -6,10 +6,12 @@ import { sos } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 const districtCentroids = {
-  'Mumbai': { lat: 19.0760, lng: 72.8777 },
-  'Pune': { lat: 18.5204, lng: 73.8567 },
-  'Delhi': { lat: 28.7041, lng: 77.1025 },
-  'default': { lat: 20.5937, lng: 78.9629 }
+  'Bhopal': { lat: 23.2599, lng: 77.4126 },
+  'Indore': { lat: 22.7196, lng: 75.8577 },
+  'Mumbai Suburban': { lat: 19.0760, lng: 72.8777 },
+  'Nagapattinam': { lat: 10.7656, lng: 79.8433 },
+  'Rudraprayag': { lat: 30.2844, lng: 78.9818 },
+  'default': { lat: 23.2599, lng: 77.4126 }
 };
 
 const SOSButton = () => {
@@ -73,7 +75,14 @@ const SOSButton = () => {
   const submitSOS = async () => {
     setIsLoading(true);
 
-    const fallbackLoc = districtCentroids[user?.district] || districtCentroids.default;
+    const getFallbackLoc = () => {
+      if (!user?.district) return districtCentroids.default;
+      const match = Object.keys(districtCentroids).find(
+        k => k.toLowerCase() === user.district.toLowerCase()
+      );
+      return match ? districtCentroids[match] : districtCentroids.default;
+    };
+    const fallbackLoc = getFallbackLoc();
     
     const sendPayload = async (lat, lng) => {
       const payload = { type, message, lat, lng, timestamp: new Date().toISOString() };

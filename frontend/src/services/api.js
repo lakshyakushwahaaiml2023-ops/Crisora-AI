@@ -36,6 +36,7 @@ export const auth = {
   login: (data) => api.post('/auth/login', data),
   register: (data) => api.post('/auth/register', data),
   getMe: () => api.get('/auth/me'),
+  toggleEvacuationStatus: (isEvacuated) => api.put('/auth/me/evacuation', { isEvacuated }),
 };
 
 export const regions = {
@@ -56,6 +57,11 @@ export const events = {
   getDisasterEvents: () => api.get('/events'),
   createDisasterEvent: (data) => api.post('/events', data),
   resolveDisasterEvent: (id, data) => api.put(`/events/${id}/resolve`, data),
+};
+
+export const broadcast = {
+  send: (data) => api.post('/broadcast', data),
+  testCall: (phone, message) => api.post('/broadcast/test-call', { phone, message }),
 };
 
 export const ai = {

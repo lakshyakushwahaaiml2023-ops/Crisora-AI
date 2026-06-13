@@ -182,4 +182,25 @@ router.get('/me', verifyToken, async (req, res) => {
   }
 });
 
+// PUT /me/evacuation — Toggle citizen evacuation compliance status
+router.put('/me/evacuation', verifyToken, async (req, res) => {
+  try {
+    const { isEvacuated } = req.body;
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    user.isEvacuated = !!isEvacuated;
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      isEvacuated: user.isEvacuated,
+      message: `Evacuation compliance status updated to: ${user.isEvacuated ? 'Evacuated' : 'Pending'}`
+    });
+  } catch (error) {
+    console.error('PUT /me/evacuation error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
 export default router;

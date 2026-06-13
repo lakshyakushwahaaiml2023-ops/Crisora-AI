@@ -18,6 +18,7 @@ import sosRouter from './routes/sos.js';
 import aiRouter from './routes/ai.js';
 import simulationRouter from './routes/simulation.js';
 import eventsRouter from './routes/events.js';
+import broadcastRouter from './routes/broadcast.js';
 import { rateLimit } from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -57,6 +58,14 @@ app.set('io', io);
 // Log Socket.io connections and disconnections
 io.on('connection', (socket) => {
   console.log(`Socket client connected: ${socket.id}`);
+
+  // Handle room joining based on user district scope
+  socket.on('join_district', (districtName) => {
+    if (districtName) {
+      socket.join(districtName);
+      console.log(`Socket client ${socket.id} joined district room: ${districtName}`);
+    }
+  });
 
   socket.on('disconnect', (reason) => {
     console.log(`Socket client disconnected: ${socket.id} (Reason: ${reason})`);
@@ -112,6 +121,7 @@ app.use('/api/sos', sosRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/simulation', simulationRouter);
 app.use('/api/events', eventsRouter);
+app.use('/api/broadcast', broadcastRouter);
 
 
 

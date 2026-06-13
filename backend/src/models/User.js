@@ -54,6 +54,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isEvacuated: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

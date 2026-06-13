@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { ShieldAlert, Activity, Users, Send, FileText, Package, CloudRain, Flame, Zap, Navigation, Siren } from 'lucide-react';
+import { ShieldAlert, Activity, Users, Send, FileText, Package, CloudRain, Flame, Zap, Navigation, Siren, Phone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRegionStore, useEventStore } from '../store';
 import toast from 'react-hot-toast';
-import { regions as regionsApi, events as eventsApi, sos as sosApi } from '../services/api';
+import { regions as regionsApi, events as eventsApi, sos as sosApi, broadcast as broadcastApi } from '../services/api';
 import { DisasterMap } from '../components/Map';
 import { RiskMeter, RiskBadge } from '../components/RiskMeter';
 import { AIRecommendation } from '../components/AIRecommendation';
@@ -60,7 +60,12 @@ const AuthorityPanel = () => {
 
   const [expandedEvent, setExpandedEvent] = useState(null);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
-  const [broadcastData, setBroadcastData] = useState({ district: 'All Districts', message: '' });
+  const [broadcastData, setBroadcastData] = useState({
+    district: 'All Districts',
+    message: '',
+    channels: ['sms', 'voice'],
+    testPhone: ''
+  });
 
   // Filter regions to only current authority's scope
   const authorityRegions = user?.role === 'district_authority' 
@@ -134,11 +139,46 @@ const AuthorityPanel = () => {
     fetchData();
   }, [setRegions, setEvents]);
 
-  const handleBroadcast = (e) => {
+  const handleBroadcast = async (e) => {
     e.preventDefault();
-    alert(`[STUB] Broadcasting to ${broadcastData.district}:\n"${broadcastData.message}"`);
-    setIsBroadcastModalOpen(false);
-    setBroadcastData({ district: 'All Districts', message: '' });
+    try {
+      toast.loading('Dispatching emergency alerts...', { id: 'broadcast_alert' });
+      const res = await broadcastApi.send({
+        district: broadcastData.district,
+        message: broadcastData.message,
+        channels: broadcastData.channels,
+        testPhone: broadcastData.testPhone
+      });
+      if (res.data?.success) {
+        let msg = `Broadcast sent to ${res.data.stats?.targeted || 0} citizens!`;
+        if (res.data.isSimulated) msg += ' (Simulated)';
+        toast.success(msg, { id: 'broadcast_alert', duration: 7000 });
+        setIsBroadcastModalOpen(false);
+        setBroadcastData({ district: 'All Districts', message: '', channels: ['sms', 'voice'], testPhone: '' });
+      }
+    } catch (error) {
+      console.error(error);
+      const errMsg = error.response?.data?.errors?.join(', ') || error.response?.data?.message || 'Failed to dispatch broadcast.';
+      toast.error(errMsg, { id: 'broadcast_alert' });
+    }
+  };
+
+  const handleTestCall = async () => {
+    const phone = broadcastData.testPhone?.trim();
+    const message = broadcastData.message?.trim();
+    if (!phone) { toast.error('Enter a test phone number first.'); return; }
+    if (!message) { toast.error('Enter a broadcast message to test.'); return; }
+    try {
+      toast.loading('Placing test call...', { id: 'test_call' });
+      const res = await broadcastApi.testCall(phone, message);
+      if (res.data?.success) {
+        const simLabel = res.data.isSimulated ? ' (Simulated)' : '';
+        toast.success(`Test call placed to ${phone}${simLabel}!`, { id: 'test_call', duration: 8000 });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Test call failed.', { id: 'test_call' });
+    }
   };
 
   const tabs = [
@@ -380,6 +420,54 @@ const AuthorityPanel = () => {
                 />
               </div>
 
+              <div className="flex gap-6 items-center bg-theme-bg/50 p-4 border border-theme-border rounded-xl">
+                <label className="flex items-center gap-2 text-sm font-bold text-theme-text cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    checked={broadcastData.channels.includes('sms')}
+                    onChange={(e) => {
+                      const newChannels = e.target.checked 
+                        ? [...broadcastData.channels, 'sms']
+                        : broadcastData.channels.filter(c => c !== 'sms');
+                      setBroadcastData({...broadcastData, channels: newChannels});
+                    }}
+                    className="h-4 w-4 rounded border-theme-border bg-theme-bg text-theme-danger focus:ring-theme-danger"
+                  />
+                  SMS Alert
+                </label>
+
+                <label className="flex items-center gap-2 text-sm font-bold text-theme-text cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    checked={broadcastData.channels.includes('voice')}
+                    onChange={(e) => {
+                      const newChannels = e.target.checked 
+                        ? [...broadcastData.channels, 'voice']
+                        : broadcastData.channels.filter(c => c !== 'voice');
+                      setBroadcastData({...broadcastData, channels: newChannels});
+                    }}
+                    className="h-4 w-4 rounded border-theme-border bg-theme-bg text-theme-danger focus:ring-theme-danger"
+                  />
+                  AI Voice Call
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold uppercase tracking-wider text-theme-text mb-2">
+                  Test Phone Number Override <span className="text-theme-muted font-normal">(Optional)</span>
+                </label>
+                <input 
+                  type="text"
+                  value={broadcastData.testPhone || ''}
+                  onChange={(e) => setBroadcastData({...broadcastData, testPhone: e.target.value})}
+                  className="w-full bg-theme-bg border border-theme-border rounded-xl p-4 text-theme-text focus:outline-none focus:border-theme-primary font-medium"
+                  placeholder="e.g. +919999999999 (for quick testing)"
+                />
+                <p className="text-[10px] text-theme-muted mt-1 leading-relaxed">
+                  If provided, the SMS and voice call will bypass all citizens and target only this number. Useful for demo testing.
+                </p>
+              </div>
+
               <div className="flex gap-4 mt-8">
                 <button 
                   type="button"
@@ -387,6 +475,15 @@ const AuthorityPanel = () => {
                   className="flex-1 py-4 bg-theme-bg hover:bg-theme-card text-theme-text border border-theme-border rounded-xl font-bold uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   Cancel
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleTestCall}
+                  disabled={!broadcastData.testPhone?.trim() || !broadcastData.message?.trim()}
+                  className="px-5 py-4 bg-theme-primary/20 hover:bg-theme-primary/40 text-theme-primary border border-theme-primary/40 rounded-xl font-bold uppercase tracking-wider transition-colors flex justify-center items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Place a test voice call to the override number"
+                >
+                  <Phone size={16} /> Test Call
                 </button>
                 <button 
                   type="submit"
