@@ -8,8 +8,8 @@ const router = express.Router();
 router.post('/chat', verifyToken, async (req, res) => {
   try {
     const { regionId, message } = req.body;
-    if (!regionId || !message) {
-      return res.status(400).json({ success: false, message: 'regionId and message are required' });
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'message is required' });
     }
 
     // Set streaming headers

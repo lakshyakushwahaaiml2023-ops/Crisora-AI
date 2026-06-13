@@ -6,42 +6,66 @@ import User from '../models/User.js';
 
 /**
  * Compiles a comprehensive context object for the AI helper.
+ * If regionId is not provided, it resolves dynamically based on the user's district or highest risk region.
  * @param {string} userId - ID of the requesting user
- * @param {string} regionId - ID of the target region
+ * @param {string} regionId - Optional ID of the target region
  * @returns {Promise<object>} Compiled agentContext JSON
  */
 export async function buildContext(userId, regionId) {
   try {
-    // 1. Get region details
-    const region = await Region.findById(regionId);
-    if (!region) {
-      throw new Error(`Region not found for ID: ${regionId}`);
+    // 1. Get requesting user role and district
+    const user = await User.findById(userId);
+    const userRole = user ? user.role : 'citizen';
+
+    // 2. Resolve region context dynamically if none provided
+    let targetRegionId = regionId;
+    if (!targetRegionId) {
+      if (user && user.district) {
+        // Find local region matching the user's district
+        const region = await Region.findOne({ district: { $regex: new RegExp(user.district, 'i') } });
+        if (region) targetRegionId = region._id.toString();
+      }
+
+      // Fallback: use the region with the highest current risk score
+      if (!targetRegionId) {
+        const region = await Region.findOne({}).sort({ riskScore: -1 });
+        if (region) targetRegionId = region._id.toString();
+      }
     }
 
-    // 2. Get last 5 sensor readings
-    const sensorReadings = await SensorReading.find({ regionId })
-      .sort({ timestamp: -1 })
-      .limit(5);
+    if (!targetRegionId) {
+      throw new Error('No region context available in the database.');
+    }
 
-    // 3. Get active disaster events (status is warning, watch, or active)
+    // 3. Get region details
+    const region = await Region.findById(targetRegionId);
+    if (!region) {
+      throw new Error(`Region not found for ID: ${targetRegionId}`);
+    }
+
+    // 4. Get the latest reading for each of the 6 sensor types in this region
+    const sensorTypes = ['weather', 'river_gauge', 'seismic', 'social_media', 'citizen_report', 'air_quality'];
+    const sensorReadingsPromises = sensorTypes.map(type => 
+      SensorReading.findOne({ regionId: region._id, sourceType: type }).sort({ timestamp: -1 })
+    );
+    const resolvedReadings = await Promise.all(sensorReadingsPromises);
+    const sensorReadings = resolvedReadings.filter(r => r !== null);
+
+    // 5. Get active disaster events (status is warning, watch, or active)
     const activeDisasters = await DisasterEvent.find({
-      regionId,
+      regionId: region._id,
       status: { $ne: 'resolved' },
     });
 
-    // 4. Get count and types of open SOS alerts in region
+    // 6. Get count and types of open SOS alerts in region
     const openSOS = await SOSAlert.find({
-      regionId,
+      regionId: region._id,
       status: { $in: ['active', 'acknowledged'] },
     });
     const sosCount = openSOS.length;
     const sosTypes = [...new Set(openSOS.map((alert) => alert.type))];
 
-    // 5. Get requesting user role
-    const user = await User.findById(userId);
-    const userRole = user ? user.role : 'citizen';
-
-    // 6. Get top 2 most similar historical disasters in the same state
+    // 7. Get top 2 most similar historical disasters in the same state
     const siblingRegions = await Region.find({ state: region.state }).select('_id');
     const siblingRegionIds = siblingRegions.map((r) => r._id);
 
@@ -100,7 +124,7 @@ export async function buildContext(userId, regionId) {
 /**
  * Queries the Groq Chat Completions API to obtain streaming advice.
  * @param {string} userId - User requesting advice
- * @param {string} regionId - Region context
+ * @param {string} regionId - Optional region context
  * @param {string} userMessage - Chat message prompt
  * @param {function} onChunk - Callback triggered for every streamed text delta chunk
  */
@@ -113,11 +137,22 @@ export async function getAIAdvice(userId, regionId, userMessage, onChunk) {
   // Compile context
   const context = await buildContext(userId, regionId);
 
-  const systemPrompt = `You are a disaster management AI assistant helper for Indian authorities (NDMA, state/district collectors, local teams). 
-Provide concise, actionable advice based on standard operating procedures.
+  const systemPrompt = `You are an expert disaster management AI assistant helper for Indian authorities (NDMA, State/District Collectors, local response teams).
+You are communicating with a user in the role: "${context.user.role}".
 
-Here is the current real-time disaster status context for the target region:
-${JSON.stringify(context, null, 2)}`;
+Your task is to analyze real-time telemetry from all sources (weather, river gauge, seismic activity, air quality, citizen reports, and social media sentiment) for the region "${context.region.name} (${context.region.district}, ${context.region.state})".
+
+REAL-TIME REGIONAL CONTEXT:
+${JSON.stringify(context, null, 2)}
+
+OPERATIONAL RULES:
+1. ROLE-SPECIFIC GUIDANCE: Tailor suggestions specifically to the user's role ("${context.user.role}").
+   - Collectors / Local teams: focus on mobilizing local SDRF, setting up camps, executing evacuations.
+   - NDMA / State: focus on national resource allocation, high-level deployments, inter-state/regional coordination.
+   - Citizens: focus on safety drills, emergency numbers, and evacuation routes.
+2. NO THREAT EXCLUSION RULE:
+   - If the region's risk score is normal/low (green/low score), and there are no active disasters, no emergency alerts, no high water capacities, and no significant seismic activity, you MUST explicitly output the phrase "no immediate threat" in your response and state that no changes or emergency response actions are required.
+3. CONCISE AND ACTIONABLE: Do not write verbose essays. Be extremely structured, utilizing bold lists for key actions.`;
 
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
