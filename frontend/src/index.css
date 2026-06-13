@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --color-theme-bg: var(--color-bg-dark);
+  --color-theme-card: var(--color-bg-card);
+  --color-theme-border: var(--color-border);
+  --color-theme-text: var(--color-text-main);
+  --color-theme-muted: var(--color-text-muted);
+  --color-theme-primary: var(--color-primary);
+  --color-theme-accent: var(--color-accent);
+  --color-theme-success: var(--color-success);
+  --color-theme-warning: var(--color-warning);
+  --color-theme-danger: var(--color-danger);
+}
+
+:root {
+  /* Light Citizen App */
+  --color-bg-dark: #F5F7FA;
+  --color-bg-card: #FFFFFF;
+  --color-border: #D8E0EA;
+  --color-text-main: #1E293B;
+  --color-text-muted: #64748B;
+  --color-primary: #1565C0;
+  --color-accent: #1565C0;
+  --color-success: #2E7D32;
+  --color-warning: #F9A825;
+  --color-danger: #C62828;
+  --color-risk-green: #2E7D32;
+  --color-risk-yellow: #F9A825;
+  --color-risk-orange: #F9A825;
+  --color-risk-red: #C62828;
+}
+
+/* Light Citizen App Theme */
+.theme-citizen {
+  --color-bg-dark: #F5F7FA;
+  --color-bg-card: #FFFFFF;
+  --color-border: #D8E0EA;
+  --color-text-main: #1E293B;
+  --color-text-muted: #64748B;
+  --color-primary: #1565C0;
+  --color-accent: #1565C0;
+  --color-success: #2E7D32;
+  --color-warning: #F9A825;
+  --color-danger: #C62828;
+  --color-risk-green: #2E7D32;
+  --color-risk-yellow: #F9A825;
+  --color-risk-orange: #F9A825;
+  --color-risk-red: #C62828;
+}
+
+/* Shared Light Citizen App Theme */
+.theme-authority {
+  --color-bg-dark: #F5F7FA;
+  --color-bg-card: #FFFFFF;
+  --color-border: #D8E0EA;
+  --color-text-main: #1E293B;
+  --color-text-muted: #64748B;
+  --color-primary: #1565C0;
+  --color-accent: #1565C0;
+  --color-success: #2E7D32;
+  --color-warning: #F9A825;
+  --color-danger: #C62828;
+  --color-risk-green: #2E7D32;
+  --color-risk-yellow: #F9A825;
+  --color-risk-orange: #F9A825;
+  --color-risk-red: #C62828;
+}
+
+body {
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-main);
+  margin: 0;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

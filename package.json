@@ -1,0 +1,20 @@
+{
+  "name": "crisora-ai-integrated",
+  "version": "1.0.0",
+  "description": "Integrated workspace for Crisora AI Disaster Management System",
+  "private": true,
+  "scripts": {
+    "postinstall": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && pnpm install",
+    "install:frontend": "cd frontend && npm install",
+    "dev:backend": "cd backend && pnpm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently --kill-others-on-fail \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:frontend",
+    "start": "cd backend && pnpm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
