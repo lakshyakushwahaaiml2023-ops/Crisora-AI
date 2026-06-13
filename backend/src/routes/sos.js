@@ -265,7 +265,8 @@ router.get(
   allowRoles('citizen', 'collector', 'district_authority', 'state_authority', 'ndma'),
   async (req, res) => {
     try {
-      let query = { status: 'active' };
+      // When ?all=true, return all statuses (for reports page)
+      let query = req.query.all === 'true' ? {} : { status: 'active' };
 
       // Determine filters based on user role
       let districtFilter = null;

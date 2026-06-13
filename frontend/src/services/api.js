@@ -48,6 +48,7 @@ export const regions = {
 export const sos = {
   createSOS: (data) => api.post('/sos', data),
   getSOSAlerts: () => api.get('/sos'),
+  getAllSOSAlerts: () => api.get('/sos?all=true'),
   acknowledgeSOS: (id) => api.put(`/sos/${id}/acknowledge`),
   resolveSOS: (id) => api.put(`/sos/${id}/resolve`),
   simulateSOSCluster: (regionId, type) => api.post('/sos/simulate-cluster', { regionId, type }),
@@ -55,6 +56,7 @@ export const sos = {
 
 export const events = {
   getDisasterEvents: () => api.get('/events'),
+  getAllDisasterEvents: () => api.get('/events?all=true'),
   createDisasterEvent: (data) => api.post('/events', data),
   resolveDisasterEvent: (id, data) => api.put(`/events/${id}/resolve`, data),
 };

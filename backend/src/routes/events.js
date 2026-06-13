@@ -28,7 +28,8 @@ const resolveEventSchema = Joi.object({
 // GET /api/events — List active/pending disaster events scoped by user district/state
 router.get('/', verifyToken, async (req, res) => {
   try {
-    const filter = { status: { $ne: 'resolved' } };
+    // When ?all=true (reports page), include resolved events too
+    const filter = req.query.all === 'true' ? {} : { status: { $ne: 'resolved' } };
 
     if (req.user.role === 'citizen' || req.user.role === 'collector' || req.user.role === 'district_authority') {
       const userRegions = await Region.find({ district: { $regex: new RegExp(req.user.district, 'i') } }).select('_id');

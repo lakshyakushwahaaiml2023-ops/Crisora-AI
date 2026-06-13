@@ -7,7 +7,7 @@ import { ProtectedRoute, RoleRoute, AppLayout } from './components/Layout';
 import { Toaster } from 'react-hot-toast';
 import { 
   LoginPage, RegisterPage, CitizenApp, AIAssistantPage, 
-  CollectorDashboard, AuthorityPanel, SimulationLab, EventsPage 
+  CollectorDashboard, AuthorityPanel, SimulationLab, EventsPage, ReportsPage
 } from './pages';
 
 // Component to handle root redirect based on authentication and role
@@ -90,7 +90,7 @@ function AppRoutes() {
         } />
         <Route path="/authority/reports" element={
           <RoleRoute allowedRoles={['district_authority', 'state_authority', 'ndma']}>
-            <AuthorityPanel />
+            <ReportsPage />
           </RoleRoute>
         } />
         <Route path="/authority/events" element={

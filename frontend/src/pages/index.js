@@ -6,3 +6,4 @@ export { default as CollectorDashboard } from './CollectorDashboard';
 export { default as AuthorityPanel } from './AuthorityPanel';
 export { default as SimulationLab } from './SimulationLab';
 export { default as EventsPage } from './EventsPage';
+export { default as ReportsPage } from './ReportsPage';
