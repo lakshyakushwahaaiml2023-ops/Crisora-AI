@@ -4,7 +4,7 @@ import {
   Menu, ChevronLeft, LogOut, 
   LayoutDashboard, LifeBuoy, HeartHandshake, Bot,
   PieChart, Bell, Siren, Box,
-  ShieldAlert, Map, Activity, FlaskConical, FileText
+  ShieldAlert, Map, Activity, FlaskConical, FileText, Skull
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -27,6 +27,7 @@ const NAV_CONFIG = {
     { name: 'Risk Map', path: '/authority/map', icon: Map },
     { name: 'Events', path: '/authority/events', icon: Activity },
     { name: 'Simulation Lab', path: '/authority/simulation', icon: FlaskConical },
+    { name: 'Bhopal 1984', path: '/authority/bhopal-simulation', icon: Skull },
     { name: 'AI Assistant', path: '/authority/ai', icon: Bot },
     { name: 'Reports', path: '/authority/reports', icon: FileText },
   ],
@@ -35,6 +36,7 @@ const NAV_CONFIG = {
     { name: 'Risk Map', path: '/authority/map', icon: Map },
     { name: 'Events', path: '/authority/events', icon: Activity },
     { name: 'Simulation Lab', path: '/authority/simulation', icon: FlaskConical },
+    { name: 'Bhopal 1984', path: '/authority/bhopal-simulation', icon: Skull },
     { name: 'AI Assistant', path: '/authority/ai', icon: Bot },
     { name: 'Reports', path: '/authority/reports', icon: FileText },
   ],
@@ -43,6 +45,7 @@ const NAV_CONFIG = {
     { name: 'Risk Map', path: '/authority/map', icon: Map },
     { name: 'Events', path: '/authority/events', icon: Activity },
     { name: 'Simulation Lab', path: '/authority/simulation', icon: FlaskConical },
+    { name: 'Bhopal 1984', path: '/authority/bhopal-simulation', icon: Skull },
     { name: 'AI Assistant', path: '/authority/ai', icon: Bot },
     { name: 'Reports', path: '/authority/reports', icon: FileText },
   ]
