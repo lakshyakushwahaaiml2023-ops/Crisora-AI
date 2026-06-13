@@ -150,9 +150,10 @@ const AuthorityPanel = () => {
         testPhone: broadcastData.testPhone
       });
       if (res.data?.success) {
-        let msg = `Broadcast sent to ${res.data.stats?.targeted || 0} citizens!`;
+        let msg = `Broadcast sent to ${res.data.stats?.sms?.success || 0} numbers!`;
         if (res.data.isSimulated) msg += ' (Simulated)';
-        toast.success(msg, { id: 'broadcast_alert', duration: 7000 });
+        if (res.data.translatedHindi) msg += `\nHindi: "${res.data.translatedHindi.slice(0, 55)}..."`;
+        toast.success(msg, { id: 'broadcast_alert', duration: 8000 });
         setIsBroadcastModalOpen(false);
         setBroadcastData({ district: 'All Districts', message: '', channels: ['sms', 'voice'], testPhone: '' });
       }
