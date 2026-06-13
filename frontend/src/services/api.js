@@ -63,7 +63,7 @@ export const events = {
 
 export const broadcast = {
   send: (data) => api.post('/broadcast', data),
-  testCall: (phone, message) => api.post('/broadcast/test-call', { phone, message }),
+  testCall: (message) => api.post('/broadcast/test-call', { message }),
 };
 
 export const ai = {

@@ -164,16 +164,15 @@ const AuthorityPanel = () => {
   };
 
   const handleTestCall = async () => {
-    const phone = broadcastData.testPhone?.trim();
     const message = broadcastData.message?.trim();
-    if (!phone) { toast.error('Enter a test phone number first.'); return; }
     if (!message) { toast.error('Enter a broadcast message to test.'); return; }
     try {
-      toast.loading('Placing test call...', { id: 'test_call' });
-      const res = await broadcastApi.testCall(phone, message);
+      toast.loading('Placing calls to all 4 numbers...', { id: 'test_call' });
+      const res = await broadcastApi.testCall(message);
       if (res.data?.success) {
         const simLabel = res.data.isSimulated ? ' (Simulated)' : '';
-        toast.success(`Test call placed to ${phone}${simLabel}!`, { id: 'test_call', duration: 8000 });
+        const count = res.data.voiceTargets?.length || 4;
+        toast.success(`Test calls placed to ${count} numbers${simLabel}!`, { id: 'test_call', duration: 8000 });
       }
     } catch (err) {
       console.error(err);
@@ -479,9 +478,9 @@ const AuthorityPanel = () => {
                 <button 
                   type="button"
                   onClick={handleTestCall}
-                  disabled={!broadcastData.testPhone?.trim() || !broadcastData.message?.trim()}
+                  disabled={!broadcastData.message?.trim()}
                   className="px-5 py-4 bg-theme-primary/20 hover:bg-theme-primary/40 text-theme-primary border border-theme-primary/40 rounded-xl font-bold uppercase tracking-wider transition-colors flex justify-center items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Place a test voice call to the override number"
+                  title="Place a test voice call to +916268347442"
                 >
                   <Phone size={16} /> Test Call
                 </button>
