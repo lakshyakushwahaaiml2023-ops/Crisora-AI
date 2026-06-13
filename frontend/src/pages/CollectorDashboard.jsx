@@ -105,6 +105,27 @@ const CollectorDashboard = () => {
     }
   };
 
+  const handleSimulateSOSCluster = async () => {
+    if (!collectorRegion) {
+      toast.error('No region context available for your district.');
+      return;
+    }
+    try {
+      toast.loading('Raising emergency alarm cluster...', { id: 'sim_sos' });
+      const res = await sosApi.simulateSOSCluster(collectorRegion._id || collectorRegion.id, 'flood');
+      if (res.data?.success) {
+        toast.success('5 Emergency SOS Alarms raised in your district!', { id: 'sim_sos' });
+        const updatedAlerts = await sosApi.getSOSAlerts();
+        if (updatedAlerts.data?.success && updatedAlerts.data?.data) {
+          setAlerts(updatedAlerts.data.data);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to raise simulated alarm cluster.', { id: 'sim_sos' });
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12 font-sans w-full max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6 px-2">
@@ -182,14 +203,23 @@ const CollectorDashboard = () => {
           <div className="bg-theme-card rounded-xl border border-theme-border p-5 shadow-xl flex-1 flex flex-col min-h-[400px] max-h-[550px]">
             <h2 className="text-lg font-semibold text-theme-text mb-4 flex items-center justify-between border-b border-theme-border pb-3">
               <span className="flex items-center gap-2">
-                <Siren size={20} className="text-theme-danger" /> Live SOS Feed
+                <Siren size={20} className="text-theme-danger animate-pulse" /> Live SOS Feed
               </span>
-              {criticalAlertsCount > 0 && (
-                <span className="flex h-3 w-3 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-theme-danger opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-theme-danger"></span>
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSimulateSOSCluster}
+                  className="px-2.5 py-1 bg-theme-danger/10 hover:bg-theme-danger/25 text-theme-danger border border-theme-danger/30 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                  title="Raise 5 simulated SOS alarms in your district to check AI suggestions"
+                >
+                  Simulate Alarm Cluster
+                </button>
+                {criticalAlertsCount > 0 && (
+                  <span className="flex h-3 w-3 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-theme-danger opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-theme-danger"></span>
+                  </span>
+                )}
+              </div>
             </h2>
             <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-theme-border">
               {activeAlerts.length > 0 ? (

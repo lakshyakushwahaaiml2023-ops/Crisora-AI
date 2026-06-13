@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { ShieldAlert, Activity, Users, Send, FileText, Package, CloudRain, Flame, Zap, Navigation } from 'lucide-react';
+import { ShieldAlert, Activity, Users, Send, FileText, Package, CloudRain, Flame, Zap, Navigation, Siren } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRegionStore, useEventStore } from '../store';
-import { regions as regionsApi, events as eventsApi } from '../services/api';
+import toast from 'react-hot-toast';
+import { regions as regionsApi, events as eventsApi, sos as sosApi } from '../services/api';
 import { DisasterMap } from '../components/Map';
 import { RiskMeter, RiskBadge } from '../components/RiskMeter';
 import { AIRecommendation } from '../components/AIRecommendation';
@@ -34,6 +35,29 @@ const AuthorityPanel = () => {
       setActiveTab('overview');
     }
   }, [location.pathname]);
+
+  const handleSimulateSOSCluster = async () => {
+    if (!authorityRegions || authorityRegions.length === 0) {
+      toast.error('No region context available.');
+      return;
+    }
+    const targetRegion = authorityRegions[0];
+    try {
+      toast.loading('Simulating statewide alarm cluster...', { id: 'sim_sos_auth' });
+      const res = await sosApi.simulateSOSCluster(targetRegion._id || targetRegion.id, 'flood');
+      if (res.data?.success) {
+        toast.success(`5 SOS alarms raised in ${targetRegion.name}!`, { id: 'sim_sos_auth' });
+        const updatedRegions = await regionsApi.getRegions();
+        if (updatedRegions.data?.success && updatedRegions.data?.data) {
+          setRegions(updatedRegions.data.data);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to raise simulated alarms.', { id: 'sim_sos_auth' });
+    }
+  };
+
   const [expandedEvent, setExpandedEvent] = useState(null);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [broadcastData, setBroadcastData] = useState({ district: 'All Districts', message: '' });
@@ -261,12 +285,21 @@ const AuthorityPanel = () => {
           <h1 className="text-3xl font-bold text-theme-text tracking-tight">Authority Control Panel</h1>
           <p className="text-sm text-theme-muted mt-1">Statewide Operations & Executive Oversight</p>
         </div>
-        <button 
-          onClick={() => setIsBroadcastModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-3 border-2 border-theme-danger text-theme-danger hover:bg-theme-danger hover:text-white rounded-full font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(220,38,38,0.15)] active:scale-95 cursor-pointer"
-        >
-          <Send size={18} /> Broadcast Alert
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleSimulateSOSCluster}
+            className="flex items-center gap-2 px-6 py-3 border-2 border-theme-primary text-theme-primary hover:bg-theme-primary hover:text-white rounded-full font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(66,165,245,0.15)] active:scale-95 cursor-pointer"
+            title="Raise 5 simulated SOS alarms in the first region of your authority's scope"
+          >
+            <Siren size={18} /> Simulate SOS Cluster
+          </button>
+          <button 
+            onClick={() => setIsBroadcastModalOpen(true)}
+            className="flex items-center gap-2 px-6 py-3 border-2 border-theme-danger text-theme-danger hover:bg-theme-danger hover:text-white rounded-full font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(220,38,38,0.15)] active:scale-95 cursor-pointer"
+          >
+            <Send size={18} /> Broadcast Alert
+          </button>
+        </div>
       </div>
 
       {/* AI Recommendation */}

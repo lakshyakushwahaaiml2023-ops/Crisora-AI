@@ -49,6 +49,7 @@ export const sos = {
   getSOSAlerts: () => api.get('/sos'),
   acknowledgeSOS: (id) => api.put(`/sos/${id}/acknowledge`),
   resolveSOS: (id) => api.put(`/sos/${id}/resolve`),
+  simulateSOSCluster: (regionId, type) => api.post('/sos/simulate-cluster', { regionId, type }),
 };
 
 export const events = {
