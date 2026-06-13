@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRegionStore, useSOSStore, useEventStore } from '../store';
 import { regions as regionsApi, sos as sosApi, events as eventsApi } from '../services/api';
 import { DisasterMap } from '../components/Map';
+import { AIRecommendation } from '../components/AIRecommendation';
 
 const getTypeIcon = (type) => {
   switch (type?.toLowerCase()) {
@@ -175,6 +176,7 @@ const CollectorDashboard = () => {
 
         {/* Right Column (40%): Live Feeds */}
         <div className="w-full lg:w-2/5 flex flex-col gap-6">
+          <AIRecommendation regionId={collectorRegion?._id} />
           
           {/* SOS Alerts Feed */}
           <div className="bg-theme-card rounded-xl border border-theme-border p-5 shadow-xl flex-1 flex flex-col min-h-[400px] max-h-[550px]">

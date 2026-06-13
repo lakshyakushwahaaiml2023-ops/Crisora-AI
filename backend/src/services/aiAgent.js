@@ -212,3 +212,63 @@ OPERATIONAL RULES:
     throw error;
   }
 }
+
+/**
+ * Queries the Groq Completions API to obtain a non-streaming complete recommendation.
+ * @param {string} userId - User requesting advice
+ * @param {string} regionId - Optional region context
+ * @param {string} userMessage - Message prompt
+ * @returns {Promise<string>} Actionable recommendation string
+ */
+export async function getAIAdviceNonStreaming(userId, regionId, userMessage) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY is not defined in environment variables');
+  }
+
+  // Compile context
+  const context = await buildContext(userId, regionId);
+
+  const systemPrompt = `You are an expert disaster management AI assistant helper for Indian authorities (NDMA, State/District Collectors, local response teams).
+You are communicating with a user in the role: "${context.user.role}".
+
+Your task is to analyze real-time telemetry from all sources (weather, river gauge, seismic activity, air quality, citizen reports, and social media sentiment) for the region "${context.region.name} (${context.region.district}, ${context.region.state})".
+
+REAL-TIME REGIONAL CONTEXT:
+${JSON.stringify(context, null, 2)}
+
+OPERATIONAL RULES:
+1. ROLE-SPECIFIC GUIDANCE: Tailor suggestions specifically to the user's role ("${context.user.role}").
+2. NO THREAT EXCLUSION RULE:
+   - If the region's risk score is normal/low (green/low score), and there are no active disasters, no emergency alerts, no high water capacities, and no significant seismic activity, you MUST explicitly output the phrase "no immediate threat" in your response and state that no changes or emergency response actions are required.
+3. CONCISE AND ACTIONABLE: Provide a very brief 2-3 sentence summary of the best course of action. Do not write a long essay.`;
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ],
+        stream: false,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Groq API error (${res.status}): ${errText}`);
+    }
+
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || 'No advice available.';
+  } catch (error) {
+    console.error('Error in getAIAdviceNonStreaming:', error);
+    throw error;
+  }
+}

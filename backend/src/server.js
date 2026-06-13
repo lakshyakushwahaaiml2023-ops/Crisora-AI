@@ -17,6 +17,7 @@ import { seedHistoricalDisasters } from './jobs/seedHistoricalDisasters.js';
 import sosRouter from './routes/sos.js';
 import aiRouter from './routes/ai.js';
 import simulationRouter from './routes/simulation.js';
+import eventsRouter from './routes/events.js';
 import { rateLimit } from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -110,37 +111,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/sos', sosRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/simulation', simulationRouter);
-
-// GET /api/events — List active disaster events scoped by user district/state
-app.get('/api/events', verifyToken, async (req, res) => {
-  try {
-    const filter = { status: { $ne: 'resolved' } };
-
-    if (req.user.role === 'citizen' || req.user.role === 'collector' || req.user.role === 'district_authority') {
-      const userRegions = await Region.find({ district: { $regex: new RegExp(req.user.district, 'i') } }).select('_id');
-      const regionIds = userRegions.map(r => r._id);
-      filter.regionId = { $in: regionIds };
-    } else if (req.user.role === 'state_authority') {
-      const userRegions = await Region.find({ state: { $regex: new RegExp(req.user.state, 'i') } }).select('_id');
-      const regionIds = userRegions.map(r => r._id);
-      filter.regionId = { $in: regionIds };
-    } else if (req.user.role === 'ndma') {
-      if (req.query.district) {
-        const userRegions = await Region.find({ district: { $regex: new RegExp(req.query.district, 'i') } }).select('_id');
-        filter.regionId = { $in: userRegions.map(r => r._id) };
-      } else if (req.query.state) {
-        const userRegions = await Region.find({ state: { $regex: new RegExp(req.query.state, 'i') } }).select('_id');
-        filter.regionId = { $in: userRegions.map(r => r._id) };
-      }
-    }
-
-    const events = await DisasterEvent.find(filter).populate('regionId');
-    return res.status(200).json({ success: true, data: events });
-  } catch (error) {
-    console.error('GET /api/events error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-});
+app.use('/api/events', eventsRouter);
 
 
 

@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, AlertTriangle, WifiOff } from 'lucide-react';
-import { ai } from '../../services/api';
+import { ai, regions as regionsApi } from '../../services/api';
 import { getOfflineAdvice } from '../../offline/offlineAI';
+import { useAuth } from '../../context/AuthContext';
+import { useRegionStore } from '../../store';
 
 const QUICK_ACTIONS = [
   "What's the risk in my area?",
@@ -10,6 +12,9 @@ const QUICK_ACTIONS = [
 ];
 
 const AIChat = () => {
+  const { user } = useAuth();
+  const { regions, setRegions } = useRegionStore();
+  const [selectedRegionId, setSelectedRegionId] = useState('');
   const [messages, setMessages] = useState([
     { id: 'initial', role: 'ai', text: "Hello. I'm the Crisora AI Assistant. How can I help you stay safe today?" }
   ]);
@@ -28,6 +33,35 @@ const AIChat = () => {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // Fetch regions if store is empty
+  useEffect(() => {
+    const fetchRegions = async () => {
+      if (!regions || regions.length === 0) {
+        try {
+          const res = await regionsApi.getRegions();
+          if (res.data?.success && res.data?.data) {
+            setRegions(res.data.data);
+          }
+        } catch (error) {
+          console.error("Failed to load regions in AIChat:", error);
+        }
+      }
+    };
+    fetchRegions();
+  }, [regions, setRegions]);
+
+  // Set default selected region matching user's district
+  useEffect(() => {
+    if (regions && regions.length > 0 && !selectedRegionId) {
+      const match = regions.find(r => r.district?.toLowerCase() === user?.district?.toLowerCase());
+      if (match) {
+        setSelectedRegionId(match._id || match.id);
+      } else {
+        setSelectedRegionId(regions[0]._id || regions[0].id);
+      }
+    }
+  }, [regions, user, selectedRegionId]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -66,7 +100,7 @@ const AIChat = () => {
       let idx = 0;
       
       const interval = setInterval(() => {
-        idx += 2; // Stream simulation speed
+        idx += 2;
         if (idx > offlineAdvice.length) idx = offlineAdvice.length;
         
         setMessages(prev => 
@@ -94,7 +128,7 @@ const AIChat = () => {
             msg.id === aiMessageId ? { ...msg, text: accumulatedText } : msg
           )
         );
-      });
+      }, selectedRegionId);
       cacheAIResponse(textToSend, accumulatedText);
     } catch (error) {
       console.error(error);
@@ -120,8 +154,27 @@ const AIChat = () => {
         </div>
       )}
 
+      {/* Region Selector */}
+      <div className={`bg-theme-bg border-b border-theme-border p-3 flex items-center justify-between gap-4 ${isOffline ? 'mt-8' : ''}`}>
+        <span className="text-xs font-bold text-theme-text uppercase tracking-wider flex items-center gap-1.5">
+          <Bot size={14} className="text-theme-primary" /> Region Focus:
+        </span>
+        <select 
+          value={selectedRegionId} 
+          onChange={(e) => setSelectedRegionId(e.target.value)}
+          className="bg-theme-card border border-theme-border rounded-lg px-3 py-1.5 text-xs font-semibold text-theme-text focus:outline-none focus:border-theme-primary cursor-pointer max-w-[200px] sm:max-w-xs"
+        >
+          <option value="">Auto-Detect Region Context</option>
+          {regions && regions.map(r => (
+            <option key={r._id || r.id} value={r._id || r.id}>
+              {r.name} ({r.district})
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Disclaimer Banner */}
-      <div className={`bg-theme-warning/10 border-b border-theme-warning/25 p-3 flex items-start gap-3 ${isOffline ? 'mt-8' : ''}`}>
+      <div className="bg-theme-warning/10 border-b border-theme-warning/25 p-3 flex items-start gap-3">
         <AlertTriangle className="text-theme-warning mt-0.5 flex-shrink-0" size={18} />
         <p className="text-xs text-theme-text font-medium leading-relaxed">
           AI advice is a decision support tool. Always follow official orders and verify critical information with local authorities.
@@ -161,7 +214,7 @@ const AIChat = () => {
             <button
               key={idx}
               onClick={() => handleSubmit(null, action)}
-              className="text-xs bg-theme-card hover:bg-theme-primary/10 text-theme-primary px-3 py-1.5 rounded-full transition-colors border border-theme-primary/25 shadow-sm"
+              className="text-xs bg-theme-card hover:bg-theme-primary/10 text-theme-primary px-3 py-1.5 rounded-full transition-colors border border-theme-primary/25 shadow-sm cursor-pointer"
             >
               {action}
             </button>
@@ -179,7 +232,7 @@ const AIChat = () => {
           <button 
             type="submit"
             disabled={!input.trim() || isThinking}
-            className={`bg-theme-primary hover:bg-theme-primary/90 disabled:bg-theme-border disabled:text-theme-muted text-white rounded-full p-3 transition-colors shadow-lg flex items-center justify-center ${isOffline ? 'bg-theme-warning hover:bg-theme-warning/90' : ''}`}
+            className={`bg-theme-primary hover:bg-theme-primary/90 disabled:bg-theme-border disabled:text-theme-muted text-white rounded-full p-3 transition-colors shadow-lg flex items-center justify-center cursor-pointer ${isOffline ? 'bg-theme-warning hover:bg-theme-warning/90' : ''}`}
           >
             <Send size={20} className={isThinking ? "opacity-50" : ""} />
           </button>

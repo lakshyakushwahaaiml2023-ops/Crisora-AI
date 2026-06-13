@@ -8,6 +8,7 @@ import { regions as regionsApi, sos as sosApi } from '../services/api';
 import { RiskMeter } from '../components/RiskMeter';
 import { DisasterMap } from '../components/Map';
 import { SOSButton } from '../components/SOSButton';
+import { AIRecommendation } from '../components/AIRecommendation';
 
 const SkeletonCard = () => (
   <div className="bg-theme-card rounded-xl border border-theme-border p-4 animate-pulse">
@@ -95,13 +96,18 @@ const CitizenApp = () => {
             </div>
             
             {myRegion ? (
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center w-full">
                 <RiskMeter 
                   score={myRegion.riskScore || 0} 
                   level={myRegion.riskLevel || 'green'} 
                   label={myRegion.name} 
                   size={160} 
                 />
+                
+                <div className="w-full mt-4 border-t border-theme-border pt-4">
+                  <AIRecommendation regionId={myRegion._id} />
+                </div>
+
                 <p className="text-xs text-theme-muted mt-4">
                   Last updated: {formatDistanceToNow(new Date(), { addSuffix: true })}
                 </p>

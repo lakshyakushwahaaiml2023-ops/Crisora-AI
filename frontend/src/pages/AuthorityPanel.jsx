@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ShieldAlert, Activity, Users, Send, FileText, Package, CloudRain, Flame, Zap, Navigation } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +8,7 @@ import { useRegionStore, useEventStore } from '../store';
 import { regions as regionsApi, events as eventsApi } from '../services/api';
 import { DisasterMap } from '../components/Map';
 import { RiskMeter, RiskBadge } from '../components/RiskMeter';
+import { AIRecommendation } from '../components/AIRecommendation';
 
 const getEventIcon = (type) => {
   switch (type?.toLowerCase()) {
@@ -20,9 +22,18 @@ const getEventIcon = (type) => {
 
 const AuthorityPanel = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const { regions, setRegions } = useRegionStore();
   const { events, setEvents } = useEventStore();
   const [activeTab, setActiveTab] = useState('overview');
+
+  useEffect(() => {
+    if (location.pathname.includes('/map')) {
+      setActiveTab('overview');
+    } else if (location.pathname.includes('/reports')) {
+      setActiveTab('overview');
+    }
+  }, [location.pathname]);
   const [expandedEvent, setExpandedEvent] = useState(null);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [broadcastData, setBroadcastData] = useState({ district: 'All Districts', message: '' });
@@ -256,6 +267,11 @@ const AuthorityPanel = () => {
         >
           <Send size={18} /> Broadcast Alert
         </button>
+      </div>
+
+      {/* AI Recommendation */}
+      <div className="px-2">
+        <AIRecommendation regionId={undefined} />
       </div>
 
       {/* Map Section (60vh) */}

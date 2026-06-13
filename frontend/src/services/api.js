@@ -53,10 +53,12 @@ export const sos = {
 
 export const events = {
   getDisasterEvents: () => api.get('/events'),
+  createDisasterEvent: (data) => api.post('/events', data),
+  resolveDisasterEvent: (id, data) => api.put(`/events/${id}/resolve`, data),
 };
 
 export const ai = {
-  sendMessage: async (message, onChunk) => {
+  sendMessage: async (message, onChunk, regionId) => {
     try {
       const token = localStorage.getItem('dms_token');
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/ai/chat`, {
@@ -65,7 +67,7 @@ export const ai = {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, regionId }),
       });
 
       if (!response.ok) {
@@ -90,6 +92,7 @@ export const ai = {
       throw error;
     }
   },
+  getRecommendation: (regionId) => api.get(`/ai/recommendation${regionId ? `?regionId=${regionId}` : ''}`),
 };
 
 export const simulation = {
